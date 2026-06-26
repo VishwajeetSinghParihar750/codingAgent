@@ -10,7 +10,7 @@ import { askQuestion, askQuestionTool } from "./tools/askQuestion";
 
 const ai = new OpenAI({
   baseURL: "https://openrouter.ai/api/v1",
-  apiKey: process.env.GEMINI_KEY!,
+  apiKey: process.env.OPEN_ROUTER_KEY!,
 });
 
 const SYSTEM_INSTRUCTION = `
@@ -21,14 +21,12 @@ const SYSTEM_INSTRUCTION = `
 * Complete the tasks one by one.
 * After finishing each task, immediately call "notifyTaskCompletion" with that task's ID.
 * Before ending, ensure every task from "tellPlan" has a matching "notifyTaskCompletion" call.
+* Use "askQuestion" tool, to get answer for some question from user. keep the questions minimal and specific.
 * You may modify only the project specified by the user.
 * If the user asks for a new project, create it only inside "~/codingAgentProjects".
 * Never create or modify files outside the target project unless the user explicitly instructs you to.
 * Write production-quality, maintainable code and ask for clarification only when essential.
   `;
-
-let previousId: any = undefined;
-let aiResponse: any = undefined;
 
 const availableFunctions = {
   bash,
@@ -40,13 +38,12 @@ const availableFunctions = {
 const context = [];
 
 const agentLoop = async (input: string) => {
-  console.log("agentLoop input ", input);
-
   context.push({ role: "user", content: input });
 
   while (true) {
-    aiResponse = await ai.responses.create({
-      model: "gemini-3.5-flash",
+    console.log(1);
+    let aiResponse = await ai.responses.create({
+      model: "gemini-2.5-flash-lite",
       input,
       tools: [
         bashTool,
@@ -55,22 +52,23 @@ const agentLoop = async (input: string) => {
         askQuestionTool,
       ],
       instructions: SYSTEM_INSTRUCTION,
-      stream: true,
+      // stream: true,
     });
 
+    console.log(2);
     let hadFunctionCalls = false;
     for (const item of aiResponse.output) {
+      console.log(3);
       if (item.type === "function_call") {
         hadFunctionCalls = true;
+
+        console.log(`Called ${item.name}(${JSON.stringify(item.arguments)}) →`);
 
         const result = await ((availableFunctions as any)[item.name] as any)(
           JSON.parse(item.arguments),
         );
 
-        console.log(
-          `Called ${item.name}(${JSON.stringify(item.arguments)}) →`,
-          result,
-        );
+        console.log(`result : `, result);
 
         context.push({
           type: "function_call_output",
@@ -84,6 +82,7 @@ const agentLoop = async (input: string) => {
 
     if (!hadFunctionCalls) break;
   }
+  console.log(4);
 };
 
 export { agentLoop };

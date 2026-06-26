@@ -1,10 +1,8 @@
-const notifyTaskCompletion = async (
-  args: {
-    taskId: string;
-  },
-  sendResponse: any,
-) => {
-  sendResponse({ payload: args.taskId, type: "taskCompleted" });
+import { done, logPlanUpdates } from "./tellPlan";
+const notifyTaskCompletion = async (args: { taskId: string }) => {
+  done.add(args.taskId);
+  logPlanUpdates();
+  return { done: true };
 };
 const notifyTaskCompletionTool: any = {
   type: "function",

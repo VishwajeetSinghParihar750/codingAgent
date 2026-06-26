@@ -1,9 +1,18 @@
-const tellPlan = (
-  args: { plan: { id: string; task: string }[] },
-  sendResponse: any,
-) => {
-  sendResponse({ type: "plan", payload: args.plan });
+const plan: { id: string; task: string }[] = [];
+const done: Set<string> = new Set();
+
+const tellPlan = (args: { plan: { id: string; task: string }[] }) => {
+  while (plan.length) plan.shift();
+  plan.push(...args.plan);
+  logPlanUpdates();
+  return { done: true };
 };
+
+const logPlanUpdates = () => {
+  for (const item of plan)
+    console.log(item.id in done ? "[$]" : "[ ]", item.task);
+};
+
 const tellPlanTool: any = {
   type: "function",
   name: "tellPlan",
@@ -35,4 +44,4 @@ const tellPlanTool: any = {
   strict: true,
 };
 
-export { tellPlan, tellPlanTool };
+export { tellPlan, tellPlanTool, done, logPlanUpdates };

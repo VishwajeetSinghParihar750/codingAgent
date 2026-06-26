@@ -1,7 +1,8 @@
 import { asyncQuestion } from "../utils/promisified";
 
 const askQuestion = async (args: { question: string }) => {
-  return asyncQuestion(args.question);
+  const res = await asyncQuestion(args.question);
+  return res;
 };
 
 const askQuestionTool: any = {
