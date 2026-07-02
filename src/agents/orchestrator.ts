@@ -71,14 +71,11 @@ When all tasks are done, respond with a concise summary of what was accomplished
 let previousInteractionId: string | undefined;
 
 export async function orchestratorAgent(input: string) {
-  const finalTextOuput = await agentLoop({
+  await agentLoop({
     systemInstruction,
     input,
     tools,
     availableFunctions,
     previousInteractionId,
-    showOutput: true,
   });
-
-  console.log(finalTextOuput);
 }

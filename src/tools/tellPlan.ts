@@ -1,16 +1,13 @@
-const plan: { id: string; task: string }[] = [];
+let plan: Map<string, string> = new Map();
 const done: Set<string> = new Set();
 
 const tellPlan = (args: { plan: { id: string; task: string }[] }) => {
-  while (plan.length) plan.shift();
-  plan.push(...args.plan);
-  logPlanUpdates();
+  plan = new Map();
+  done.clear();
+  args.plan.forEach((item) => {
+    plan.set(item.id, item.task);
+  });
   return { done: true };
-};
-
-const logPlanUpdates = () => {
-  for (const item of plan)
-    console.log(item.id in done ? "[$]" : "[ ]", item.task);
 };
 
 const tellPlanTool: any = {
@@ -43,4 +40,4 @@ const tellPlanTool: any = {
   },
 };
 
-export { tellPlan, tellPlanTool, done, logPlanUpdates };
+export { tellPlan, tellPlanTool, done, plan };

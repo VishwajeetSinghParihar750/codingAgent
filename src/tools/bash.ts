@@ -6,11 +6,8 @@ const asyncExec = promisify(exec);
 const bash = async (args: {
   command: string;
 }): Promise<{ stderr: string; stdout: string } | { error: string }> => {
-  console.log("called bash tool with command:  ", args.command);
-
   try {
-    let res = await asyncExec(args.command);
-    return res;
+    return await asyncExec(args.command);
   } catch (error) {
     return { error: (error as Error).message };
   }

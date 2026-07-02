@@ -17,10 +17,10 @@ Guidelines:
 `;
 
 const availableToolsNames = ["bash"];
-const availableTools = {
+const availableFunctionsMapping = {
   bash,
 };
-const availableFunctionsMapping = {
+const availableToolsMapping = {
   bash: bashTool,
 };
 
@@ -29,9 +29,10 @@ const subAgent = async (args: { tools: string[]; input: string }) => {
     toRet[curVal] = (availableFunctionsMapping as any)[curVal];
     return toRet;
   }, {} as any);
-  const tools = args.tools.map((toolName) => (availableTools as any)[toolName]);
 
-  let result = await agentLoop({
+  const tools = args.tools.map((name) => (availableToolsMapping as any)[name]);
+
+  return agentLoop({
     systemInstruction,
     input: args.input,
     tools,
@@ -56,7 +57,6 @@ const subAgent = async (args: { tools: string[]; input: string }) => {
       },
     },
   });
-  return result;
 };
 
 const subAgentTool: any = {

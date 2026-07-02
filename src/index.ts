@@ -5,6 +5,5 @@ import { asyncQuestion } from "./utils/promisified";
 while (true) {
   const query = await asyncQuestion("what do you wanna do ? ");
   const completeQuery = await interfaceAgent(query);
-  console.log(completeQuery);
   await orchestratorAgent(completeQuery);
 }

@@ -12,7 +12,6 @@ type agentLoopArgs = {
   availableFunctions: any;
   outputStructure?: any;
   previousInteractionId?: string;
-  showOutput?: boolean;
 };
 export async function agentLoop(
   args: agentLoopArgs,
@@ -24,10 +23,7 @@ export async function agentLoop(
     availableFunctions,
     outputStructure,
     previousInteractionId,
-    showOutput,
   } = args;
-
-  showOutput ??= false;
 
   let currentInput: any = input;
 
@@ -42,9 +38,6 @@ export async function agentLoop(
     });
 
     previousInteractionId = interaction.id;
-
-    if (showOutput && interaction.output_text)
-      console.log(interaction.output_text);
 
     let hadFunctionCalls = false;
     const toolOutputs = [];
