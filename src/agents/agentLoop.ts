@@ -5,27 +5,46 @@ const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_KEY!,
 });
 
-let previousInteractionId: string | undefined;
+type agentLoopArgs = {
+  systemInstruction: string;
+  input: string;
+  tools: any[];
+  availableFunctions: any;
+  outputStructure?: any;
+  previousInteractionId?: string;
+  showOutput?: boolean;
+};
+export async function agentLoop(
+  args: agentLoopArgs,
+): Promise<string | undefined> {
+  let {
+    systemInstruction,
+    input,
+    tools,
+    availableFunctions,
+    outputStructure,
+    previousInteractionId,
+    showOutput,
+  } = args;
 
-export async function interfaceAgent(
-  systemInstruction: string,
-  input: string,
-  tools: any[],
-  availableFunctions: any,
-) {
+  showOutput ??= false;
+
   let currentInput: any = input;
 
   while (true) {
     const interaction = await ai.interactions.create({
-      model: "gemini-2.5-flash",
+      model: "gemini-3.5-flash",
       input: currentInput,
       tools,
       system_instruction: systemInstruction,
       previous_interaction_id: previousInteractionId,
+      ...(outputStructure != undefined && outputStructure),
     });
 
-    console.log(interaction.output_text);
     previousInteractionId = interaction.id;
+
+    if (showOutput && interaction.output_text)
+      console.log(interaction.output_text);
 
     let hadFunctionCalls = false;
     const toolOutputs = [];
@@ -40,13 +59,14 @@ export async function interfaceAgent(
       );
 
       toolOutputs.push({
-        type: "function_call_output",
+        type: "function_result",
+        name: item.name,
         call_id: item.id,
-        output: result,
+        result,
       });
     }
 
-    if (!hadFunctionCalls) break;
+    if (!hadFunctionCalls) return interaction.output_text;
 
     currentInput = toolOutputs;
   }

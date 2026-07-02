@@ -21,7 +21,6 @@ const notifyTaskCompletionTool: any = {
     },
     required: ["taskId"],
   },
-  strict: true,
 };
 
 export { notifyTaskCompletion, notifyTaskCompletionTool };

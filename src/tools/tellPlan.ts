@@ -41,7 +41,6 @@ const tellPlanTool: any = {
     },
     required: ["plan"],
   },
-  strict: true,
 };
 
 export { tellPlan, tellPlanTool, done, logPlanUpdates };
