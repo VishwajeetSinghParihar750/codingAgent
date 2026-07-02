@@ -1,4 +1,4 @@
-import { agentLoop } from "./agent";
+import { agentLoop } from "./agents/interface.ts";
 import { asyncQuestion } from "./utils/promisified";
 
 // while (true) {
