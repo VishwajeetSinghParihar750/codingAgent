@@ -25,6 +25,8 @@ const availableToolsMapping = {
 };
 
 const subAgent = async (args: { tools: string[]; input: string }) => {
+  console.log("called subAgent with :", args.input);
+
   const availableFunctions = args.tools.reduce((toRet, curVal) => {
     toRet[curVal] = (availableFunctionsMapping as any)[curVal];
     return toRet;
@@ -32,7 +34,7 @@ const subAgent = async (args: { tools: string[]; input: string }) => {
 
   const tools = args.tools.map((name) => (availableToolsMapping as any)[name]);
 
-  return agentLoop({
+  const toReturn = await agentLoop({
     systemInstruction,
     input: args.input,
     tools,
@@ -57,6 +59,9 @@ const subAgent = async (args: { tools: string[]; input: string }) => {
       },
     },
   });
+
+  console.log("subAgent with input : ", args.input, " returned : ", toReturn);
+  return toReturn;
 };
 
 const subAgentTool: any = {

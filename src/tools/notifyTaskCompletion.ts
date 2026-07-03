@@ -1,10 +1,13 @@
-import { plan, done } from "./tellPlan";
+import { plan, done, logPlan } from "./tellPlan";
 
 const notifyTaskCompletion = async (args: { taskId: string }) => {
+  console.log("called notifyTaskCompletion with : ", args.taskId);
+
   if (!plan.has(args.taskId)) {
     return { error: "no such taskId in latest plan " };
   }
   done.add(args.taskId);
+  logPlan();
   return { done: true };
 };
 const notifyTaskCompletionTool: any = {
