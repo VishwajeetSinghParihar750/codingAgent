@@ -1,5 +1,5 @@
 import { agentLoop } from "../agents/agentLoop";
-import { bash, bashTool } from "./bash";
+import { bash, bashTool } from "../utils/bash";
 
 const systemInstruction = `
 You are a focused sub-agent that completes tasks delegated by a main agent.
@@ -24,7 +24,7 @@ const availableToolsMapping = {
   bash: bashTool,
 };
 
-const subAgent = async (args: { tools: string[]; input: string }) => {
+const subAgentRun = async (args: { tools: string[]; input: string }) => {
   console.log("called subAgent with :", args.input);
 
   const availableFunctions = args.tools.reduce((toRet, curVal) => {
@@ -48,7 +48,7 @@ const subAgent = async (args: { tools: string[]; input: string }) => {
           properties: {
             error: {
               type: "string",
-              desciption: "actionable error message if error",
+              description: "actionable error message if error",
             },
             result: {
               type: "string",
@@ -64,7 +64,7 @@ const subAgent = async (args: { tools: string[]; input: string }) => {
   return toReturn;
 };
 
-const subAgentTool: any = {
+const subAgentDefinition: any = {
   type: "function",
   name: "subAgent",
   description: `
@@ -83,7 +83,7 @@ const subAgentTool: any = {
         description: "tools the agent has to complete its job",
         items: {
           type: "string",
-          enum: availableToolsNames, // these will be available to main agent
+          enum: availableToolsNames,
         },
       },
     },
@@ -92,4 +92,9 @@ const subAgentTool: any = {
   },
 };
 
-export { subAgent, subAgentTool };
+const subAgent = {
+  toolDefinition: subAgentDefinition,
+  toolCall: subAgentRun,
+};
+
+export { subAgent };

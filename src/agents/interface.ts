@@ -1,6 +1,6 @@
 import "dotenv/config";
 
-import { askQuestion, askQuestionTool } from "../tools/askQuestion";
+import { askQuestion } from "../tools/askQuestion";
 import { agentLoop } from "./agentLoop";
 
 const systemInstruction = `
@@ -14,10 +14,10 @@ You are an expert software project analyst.
 `;
 
 const availableFunctions = {
-  askQuestion,
+  askQuestion: askQuestion.toolCall,
 };
 
-const tools = [askQuestionTool];
+const tools = [askQuestion.toolDefinition];
 
 let previousInteractionId: string | undefined;
 

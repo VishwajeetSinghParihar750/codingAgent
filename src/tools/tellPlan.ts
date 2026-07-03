@@ -1,7 +1,7 @@
 const plan: Map<string, string> = new Map();
 const done: Set<string> = new Set();
 
-const tellPlan = (args: { plan: { id: string; task: string }[] }) => {
+const tellPlanRun = (args: { plan: { id: string; task: string }[] }) => {
   console.log("called tell plan with : ", args.plan);
 
   plan.clear();
@@ -21,7 +21,7 @@ const logPlan = () => {
   }
 };
 
-const tellPlanTool: any = {
+const tellPlanDefinition: any = {
   type: "function",
   name: "tellPlan",
   description: `
@@ -51,4 +51,9 @@ const tellPlanTool: any = {
   },
 };
 
-export { tellPlan, tellPlanTool, done, plan, logPlan };
+const tellPlan = {
+  toolDefinition: tellPlanDefinition,
+  toolCall: tellPlanRun,
+};
+
+export { tellPlan, done, plan, logPlan };

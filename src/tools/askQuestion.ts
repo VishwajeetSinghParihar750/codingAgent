@@ -1,10 +1,6 @@
 import { asyncQuestion } from "../utils/promisified";
 
-const askQuestion = async (args: { question: string }) => {
-  return asyncQuestion(args.question + "\n\n > ");
-};
-
-const askQuestionTool: any = {
+const askQuestionDefinition: any = {
   type: "function",
   name: "askQuestion",
   description: `
@@ -22,4 +18,13 @@ const askQuestionTool: any = {
   },
 };
 
-export { askQuestion, askQuestionTool };
+const askQuestionRun = async (args: { question: string }) => {
+  return asyncQuestion(args.question + "\n\n > ");
+};
+
+const askQuestion = {
+  toolDefinition: askQuestionDefinition,
+  toolCall: askQuestionRun,
+};
+
+export { askQuestion };

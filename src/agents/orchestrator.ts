@@ -1,21 +1,23 @@
 import "dotenv/config";
 
 import { agentLoop } from "./agentLoop";
-import { bash, bashTool } from "../tools/bash";
-import { tellPlan, tellPlanTool } from "../tools/tellPlan";
-import {
-  notifyTaskCompletion,
-  notifyTaskCompletionTool,
-} from "../tools/notifyTaskCompletion";
-import { subAgent, subAgentTool } from "../tools/subAgent";
+import { bash, bashTool } from "../utils/bash";
+import { tellPlan } from "../tools/tellPlan";
+import { notifyTaskCompletion } from "../tools/notifyTaskCompletion";
+import { subAgent } from "../tools/subAgent";
 
 const tools: any[] = [
   bashTool,
-  tellPlanTool,
-  notifyTaskCompletionTool,
-  subAgentTool,
+  tellPlan.toolDefinition,
+  notifyTaskCompletion.toolDefinition,
+  subAgent.toolDefinition,
 ];
-const availableFunctions = { bash, tellPlan, notifyTaskCompletion, subAgent };
+const availableFunctions = {
+  bash,
+  tellPlan: tellPlan.toolCall,
+  notifyTaskCompletion: notifyTaskCompletion.toolCall,
+  subAgent: subAgent.toolCall,
+};
 
 const systemInstruction = `
 You are an orchestrator agent that plans and coordinates complex work. You do not execute tasks yourself — you decompose work into a dependency graph (DAG), show the user your plan, and delegate execution to sub-agents.

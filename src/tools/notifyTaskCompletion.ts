@@ -1,6 +1,6 @@
 import { plan, done, logPlan } from "./tellPlan";
 
-const notifyTaskCompletion = async (args: { taskId: string }) => {
+const notifyTaskCompletionRun = async (args: { taskId: string }) => {
   console.log("called notifyTaskCompletion with : ", args.taskId);
 
   if (!plan.has(args.taskId)) {
@@ -10,7 +10,8 @@ const notifyTaskCompletion = async (args: { taskId: string }) => {
   logPlan();
   return { done: true };
 };
-const notifyTaskCompletionTool: any = {
+
+const notifyTaskCompletionDefinition: any = {
   type: "function",
   name: "notifyTaskCompletion",
   description: `
@@ -30,4 +31,9 @@ const notifyTaskCompletionTool: any = {
   },
 };
 
-export { notifyTaskCompletion, notifyTaskCompletionTool };
+const notifyTaskCompletion = {
+  toolDefinition: notifyTaskCompletionDefinition,
+  toolCall: notifyTaskCompletionRun,
+};
+
+export { notifyTaskCompletion };
