@@ -1,15 +1,17 @@
-import { listFiles } from "../tools/listFiles";
-import { editFile } from "../tools/editFile";
-import { writeFile } from "../tools/writeFile";
-import { readFile } from "../tools/readFile";
-import { searchCode } from "../tools/searchCode";
+// import { listFiles } from "../tools/listFiles";
+// import { editFile } from "../tools/editFile";
+// import { writeFile } from "../tools/writeFile";
+// import { readFile } from "../tools/readFile";
+// import { searchCode } from "../tools/searchCode";
+import { bash } from "../tools/bash";
 
 const executionTools = {
-  listFiles,
-  editFile,
-  writeFile,
-  readFile,
-  searchCode,
+  // listFiles,
+  // editFile,
+  // writeFile,
+  // readFile,
+  // searchCode,
+  bash,
 } as const;
 
 const subAgentToolsNames = Object.keys(executionTools);

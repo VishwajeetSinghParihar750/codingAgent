@@ -3,7 +3,7 @@ import { promisify } from "util";
 
 const asyncExec = promisify(exec);
 
-const bash = async (args: {
+const bashRun = async (args: {
   command: string;
 }): Promise<{ stderr: string; stdout: string } | { error: string }> => {
   console.log("called bash with : ", args.command);
@@ -31,4 +31,6 @@ const bashTool: any = {
   },
 };
 
-export { bash, bashTool };
+const bash = { toolDefinition: bashTool, toolCall: bashRun };
+
+export { bash };
