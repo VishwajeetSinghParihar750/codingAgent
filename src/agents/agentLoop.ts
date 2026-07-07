@@ -1,11 +1,13 @@
 import "dotenv/config";
 import { GoogleGenAI } from "@google/genai";
+import { type AgentIdentity, agentLog } from "./identity";
 
 const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_KEY!,
 });
 
 type agentLoopArgs = {
+  identity: AgentIdentity;
   systemInstruction: string;
   input: string;
   tools: any[];
@@ -17,6 +19,7 @@ export async function agentLoop(
   args: agentLoopArgs,
 ): Promise<string | undefined> {
   let {
+    identity,
     systemInstruction,
     input,
     tools,
@@ -46,6 +49,8 @@ export async function agentLoop(
       if (item.type !== "function_call") continue;
 
       hadFunctionCalls = true;
+
+      agentLog(identity, "calling tool:", item.name, "with args:", item.arguments);
 
       const result = await (availableFunctions as any)[item.name](
         item.arguments,

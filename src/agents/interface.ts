@@ -23,6 +23,7 @@ let previousInteractionId: string | undefined;
 
 const interfaceAgent = async (input: string): Promise<string> => {
   const result = await agentLoop({
+    identity: { name: "interface" },
     systemInstruction,
     input,
     tools,

@@ -1,4 +1,5 @@
 import { agentLoop } from "../agents/agentLoop";
+import { agentLog } from "../agents/identity";
 import {
   subAgentToolsNames,
   subAgentFunctionsMapping,
@@ -20,8 +21,14 @@ Guidelines:
 * Keep both fields short and directly useful to the main agent.
 `;
 
+let subAgentId = 0;
 const subAgentRun = async (args: { tools: string[]; input: string }) => {
-  console.log("called subAgent with :", args.input);
+  const identity = {
+    name: "subAgent" + subAgentId++,
+    label: args.input.slice(0, 60),
+  };
+
+  agentLog(identity, "started with input:", args.input);
 
   const availableFunctions = args.tools.reduce((toRet, curVal) => {
     toRet[curVal] = (subAgentFunctionsMapping as any)[curVal];
@@ -33,6 +40,7 @@ const subAgentRun = async (args: { tools: string[]; input: string }) => {
   );
 
   const toReturn = await agentLoop({
+    identity,
     systemInstruction,
     input: args.input,
     tools,
@@ -58,7 +66,7 @@ const subAgentRun = async (args: { tools: string[]; input: string }) => {
     },
   });
 
-  console.log("subAgent with input : ", args.input, " returned : ", toReturn);
+  agentLog(identity, "returned:", toReturn);
   return toReturn;
 };
 

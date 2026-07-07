@@ -80,6 +80,7 @@ let previousInteractionId: string | undefined;
 
 export async function orchestratorAgent(input: string) {
   await agentLoop({
+    identity: { name: "orchestrator" },
     systemInstruction,
     input,
     tools,
