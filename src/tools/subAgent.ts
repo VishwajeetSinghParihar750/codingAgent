@@ -1,5 +1,9 @@
 import { agentLoop } from "../agents/agentLoop";
-import { bash, bashTool } from "../utils/bash";
+import {
+  subAgentToolsNames,
+  subAgentFunctionsMapping,
+  subAgentToolsDefinitionsMapping,
+} from "../utils/executionToolMapping";
 
 const systemInstruction = `
 You are a focused sub-agent that completes tasks delegated by a main agent.
@@ -16,23 +20,17 @@ Guidelines:
 * Keep both fields short and directly useful to the main agent.
 `;
 
-const availableToolsNames = ["bash"];
-const availableFunctionsMapping = {
-  bash,
-};
-const availableToolsMapping = {
-  bash: bashTool,
-};
-
 const subAgentRun = async (args: { tools: string[]; input: string }) => {
   console.log("called subAgent with :", args.input);
 
   const availableFunctions = args.tools.reduce((toRet, curVal) => {
-    toRet[curVal] = (availableFunctionsMapping as any)[curVal];
+    toRet[curVal] = (subAgentFunctionsMapping as any)[curVal];
     return toRet;
   }, {} as any);
 
-  const tools = args.tools.map((name) => (availableToolsMapping as any)[name]);
+  const tools = args.tools.map(
+    (name) => (subAgentToolsDefinitionsMapping as any)[name],
+  );
 
   const toReturn = await agentLoop({
     systemInstruction,
@@ -83,7 +81,7 @@ const subAgentDefinition: any = {
         description: "tools the agent has to complete its job",
         items: {
           type: "string",
-          enum: availableToolsNames,
+          enum: subAgentToolsNames,
         },
       },
     },

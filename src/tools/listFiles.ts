@@ -5,6 +5,7 @@ const listFilesDefinition: any = {
   name: "listFiles",
   description: `
   list the files in the given absolute directory path
+  runs on bash => ls -la "\${args.absoluteDirectoryPath}"
   `,
   parameters: {
     type: "string",
