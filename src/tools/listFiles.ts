@@ -19,7 +19,7 @@ const listFilesDefinition: any = {
 };
 
 const listFilesRun = (args: { absoluteDirectoryPath: string }) =>
-  bash({ command: `ls ${args.absoluteDirectoryPath}` });
+  bash({ command: `ls -la "${args.absoluteDirectoryPath}"` });
 
 const listFiles = {
   toolDefinition: listFilesDefinition,
