@@ -6,76 +6,192 @@ import {
   subAgentToolsDefinitionsMapping,
 } from "../utils/executionToolMapping";
 
-const systemInstruction = `
-You are an execution sub-agent.
+const subAgentResponseSchema = {
+  response_format: {
+    type: "text",
+    mime_type: "application/json",
+    schema: {
+      type: "object",
+      properties: {
+        parent: {
+          type: "object",
+          description:
+            "Information returned to the parent agent so it can continue execution.",
 
-You are given one well-defined objective by the orchestrator.
+          properties: {
+            summary: {
+              type: "string",
+              description:
+                "Brief summary (100-300 tokens) of what was accomplished.",
+            },
 
-Your responsibility is to complete that objective as thoroughly as possible using the tools available to you.
+            deliverable: {
+              type: "string",
+              description:
+                "The primary output requested by the parent. Can contain markdown, code, JSON serialized as string, or any textual artifact.",
+            },
 
-You do not coordinate work.
-You do not create plans.
-You do not delegate work.
-You do not ask the orchestrator what to do next.
-You execute.
+            keyFindings: {
+              type: "array",
+              items: { type: "string" },
+              description: "Important discoveries the parent should know.",
+            },
 
-## Responsibilities
+            assumptions: {
+              type: "array",
+              items: { type: "string" },
+            },
 
-- Fully understand the assigned objective.
-- Use the available tools to complete it.
-- Adapt when a tool or approach fails.
-- Verify your work whenever practical.
-- Continue until the objective is completed or no reasonable path remains.
+            recommendations: {
+              type: "array",
+              items: { type: "string" },
+              description: "Suggested next tasks or follow-up investigations.",
+            },
 
-## Execution
+            confidence: {
+              type: "number",
+              minimum: 0,
+              maximum: 1,
+            },
+          },
 
-Prefer solving the actual problem over blindly following an initial approach.
+          required: [
+            "summary",
+            "deliverable",
+            "keyFindings",
+            "assumptions",
+            "recommendations",
+            "confidence",
+          ],
+        },
 
-If a tool fails:
-- understand why
-- try another approach
-- retry when appropriate
-- only give up after reasonable alternatives have been exhausted
+        tree: {
+          type: "object",
+          description: "Minimal metadata used to update the execution tree.",
 
-Do not stop because the first attempt failed.
+          properties: {
+            title: {
+              type: "string",
+            },
 
-## Scope
+            status: {
+              type: "string",
+              enum: ["completed", "partial", "failed"],
+            },
 
-Stay within the assigned objective.
+            tags: {
+              type: "array",
+              items: {
+                type: "string",
+              },
+            },
 
-Do not expand the task.
+            artifacts: {
+              type: "array",
+              items: {
+                type: "string",
+              },
+              description: "IDs of produced artifacts.",
+            },
 
-Do not make unrelated improvements.
+            childTasksSuggested: {
+              type: "array",
+              items: {
+                type: "string",
+              },
+            },
+          },
 
-If additional work is required outside your objective, report it instead of attempting it.
+          required: [
+            "title",
+            "status",
+            "tags",
+            "artifacts",
+            "childTasksSuggested",
+          ],
+        },
 
-## Communication
+        memory: {
+          type: "object",
+          description:
+            "Information to store in execution memory for future retrieval.",
 
-The orchestrator only needs the outcome.
+          properties: {
+            shouldStore: {
+              type: "boolean",
+            },
 
-Do not explain:
-- internal reasoning
-- tool usage
-- failed attempts
-- intermediate progress
+            importance: {
+              type: "number",
+              minimum: 0,
+              maximum: 1,
+            },
 
-Return only:
-- result: the useful final outcome
-- error: an actionable explanation if the objective could not be completed
+            searchableSummary: {
+              type: "string",
+              description: "Compact retrieval-oriented summary.",
+            },
 
-Exactly one of result or error should be non-empty.
+            findings: {
+              type: "array",
+              items: {
+                type: "string",
+              },
+            },
 
-## General
+            keywords: {
+              type: "array",
+              items: {
+                type: "string",
+              },
+            },
 
-Never fabricate results.
+            concepts: {
+              type: "array",
+              items: {
+                type: "string",
+              },
+            },
 
-Never claim success unless you completed the objective.
+            assumptions: {
+              type: "array",
+              items: {
+                type: "string",
+              },
+            },
 
-If success is partial but the requested objective is not complete, treat it as a failure and explain what prevented completion.
-`;
+            decisions: {
+              type: "array",
+              items: {
+                type: "string",
+              },
+            },
+          },
+
+          required: [
+            "shouldStore",
+            "importance",
+            "searchableSummary",
+            "findings",
+            "keywords",
+            "concepts",
+            "assumptions",
+            "decisions",
+          ],
+        },
+      },
+
+      required: ["parent", "tree", "memory"],
+    },
+  },
+};
 
 let subAgentId = 0;
-const subAgentRun = async (args: { tools: string[]; input: string }) => {
+const subAgentRun = async (args: {
+  tools: string[];
+  input: string;
+  systemInstruction: string;
+}) => {
   const identity = {
     name: "subAgent" + subAgentId++,
     label: args.input.slice(0, 60),
@@ -99,66 +215,47 @@ const subAgentRun = async (args: { tools: string[]; input: string }) => {
     },
   ];
 
-  const toReturn = await agentLoop({
+  const response = await agentLoop({
     identity,
-    systemInstruction,
+    systemInstruction: args.systemInstruction,
     chat,
     tools,
     availableFunctions,
-    outputStructure: {
-      response_format: {
-        type: "text",
-        mime_type: "application/json",
-        schema: {
-          type: "object",
-          properties: {
-            error: {
-              type: "string",
-              description: "actionable error message if error",
-            },
-            result: {
-              type: "string",
-              description: "concise final answer if success",
-            },
-          },
-        },
-      },
-    },
+    outputStructure: subAgentResponseSchema,
   });
 
-  agentLog(identity, "returned:", toReturn);
-  return toReturn;
+  const parsedResponse = JSON.parse(response!);
+
+  agentLog(identity, "returned:", parsedResponse);
+  return parsedResponse.parent;
 };
 
 const subAgentDefinition: any = {
   type: "function",
   name: "subAgent",
   description: `
-  this is an ai agent with system instruction = "${systemInstruction}", 
-  and response format "{ error: string, result: string }"
+  Spawn a focused sub-agent to complete a delegated task using the tools you assign.
+  Use this for non-trivial work that needs investigation, multiple tool calls, or substantial reasoning.
+  Do not use for small tasks you can finish yourself in a few steps.
+  Response format : ${subAgentResponseSchema.response_format.schema.properties.parent}
   `,
   parameters: {
     type: "object",
     properties: {
+      systemInstruction: {
+        type: "string",
+        description:
+          "Role and behavior for the sub-agent: objective, constraints, expected output, and how to use its tools. Must be self-contained because the sub-agent does not see orchestrator context.",
+      },
       input: {
         type: "string",
-        description: `
-A self-contained task description.
-
-Write this as if assigning work to a capable engineer who has no other context.
-
-The assignment should contain:
-- Objective: what needs to be accomplished.
-- Context: all information required to understand the task.
-- Constraints: important requirements or things to avoid.
-- Success criteria: what constitutes successful completion.
-
-Do not assume the sub-agent knows anything that is not included here.
-`,
+        description:
+          "The task for the sub-agent: one clear objective plus all context it needs to finish independently (relevant paths, prior findings, constraints, and expected deliverable).",
       },
       tools: {
         type: "array",
-        description: "tools the agent has to complete its job",
+        description:
+          "Execution tools the sub-agent may call. Grant only what is needed for this task.",
         items: {
           type: "string",
           enum: subAgentToolsNames,
@@ -166,7 +263,7 @@ Do not assume the sub-agent knows anything that is not included here.
       },
     },
 
-    required: ["input", "tools"],
+    required: ["input", "tools", "systemInstruction"],
   },
 };
 
