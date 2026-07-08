@@ -1,9 +1,18 @@
 import "dotenv/config";
 import { GoogleGenAI } from "@google/genai";
 import { type AgentIdentity, agentLog } from "./identity";
+import { assert } from "console";
+import {
+  SUMMARIZATION_OR_COMPACTION_OUTPUT_STRUCTURE,
+  SUMMARIZATION_OR_COMPACTION_SYSTEM_INSTRUCTION,
+} from "../utils/compactionSummarization";
 
+const geminiModel = "gemini-3.5-flash";
 const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_KEY!,
+});
+const model = await ai.models.get({
+  model: geminiModel,
 });
 
 type agentLoopArgs = {
@@ -18,7 +27,10 @@ type agentLoopArgs = {
 export async function agentLoop(
   args: agentLoopArgs,
 ): Promise<string | undefined> {
-  const {
+  const contextWindowSize = model.inputTokenLimit;
+  assert(contextWindowSize, "context window size could not be found ");
+
+  let {
     identity,
     systemInstruction,
     chat,
@@ -29,13 +41,32 @@ export async function agentLoop(
 
   while (true) {
     const interaction = await ai.interactions.create({
-      model: "gemini-3.5-flash",
+      model: geminiModel,
       input: chat,
       store: false,
       tools,
       system_instruction: systemInstruction,
       ...(outputStructure != undefined && outputStructure),
     });
+
+    const tokensUsed = interaction.usage?.total_tokens;
+    if (tokensUsed != undefined) {
+      // maybe summarize / compaction
+      if (contextWindowSize! / 2 < tokensUsed) {
+        const compactionInteraction = await ai.interactions.create({
+          model: geminiModel,
+          input: chat,
+          store: false,
+          system_instruction: SUMMARIZATION_OR_COMPACTION_SYSTEM_INSTRUCTION,
+          ...SUMMARIZATION_OR_COMPACTION_OUTPUT_STRUCTURE,
+        });
+        const parsedResponse = JSON.parse(compactionInteraction.output_text!);
+
+        const { type, value } = parsedResponse;
+        chat.length = 0;
+        chat.push(...value);
+      }
+    }
 
     chat.push(...interaction.steps);
 
@@ -65,12 +96,6 @@ export async function agentLoop(
         call_id: item.id,
         result,
       });
-    }
-
-    const tokensUsed = interaction.usage?.total_tokens;
-    if (tokensUsed != undefined) {
-      // maybe summarize / compaction
-      //
     }
 
     if (!hadFunctionCalls) {
