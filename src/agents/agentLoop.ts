@@ -9,38 +9,35 @@ const ai = new GoogleGenAI({
 type agentLoopArgs = {
   identity: AgentIdentity;
   systemInstruction: string;
-  input: string;
+  chat: any[];
   tools: any[];
   availableFunctions: any;
   outputStructure?: any;
-  previousInteractionId?: string;
 };
+
 export async function agentLoop(
   args: agentLoopArgs,
 ): Promise<string | undefined> {
-  let {
+  const {
     identity,
     systemInstruction,
-    input,
+    chat,
     tools,
     availableFunctions,
     outputStructure,
-    previousInteractionId,
   } = args;
-
-  let currentInput: any = input;
 
   while (true) {
     const interaction = await ai.interactions.create({
       model: "gemini-3.5-flash",
-      input: currentInput,
+      input: chat,
+      store: false,
       tools,
       system_instruction: systemInstruction,
-      previous_interaction_id: previousInteractionId,
       ...(outputStructure != undefined && outputStructure),
     });
 
-    previousInteractionId = interaction.id;
+    chat.push(...interaction.steps);
 
     let hadFunctionCalls = false;
     const toolOutputs = [];
@@ -50,7 +47,13 @@ export async function agentLoop(
 
       hadFunctionCalls = true;
 
-      agentLog(identity, "calling tool:", item.name, "with args:", item.arguments);
+      agentLog(
+        identity,
+        "calling tool:",
+        item.name,
+        "with args:",
+        item.arguments,
+      );
 
       const result = await (availableFunctions as any)[item.name](
         item.arguments,
@@ -64,8 +67,16 @@ export async function agentLoop(
       });
     }
 
-    if (!hadFunctionCalls) return interaction.output_text;
+    const tokensUsed = interaction.usage?.total_tokens;
+    if (tokensUsed != undefined) {
+      // maybe summarize / compaction
+      //
+    }
 
-    currentInput = toolOutputs;
+    if (!hadFunctionCalls) {
+      return interaction.output_text;
+    }
+
+    chat.push(...toolOutputs);
   }
 }

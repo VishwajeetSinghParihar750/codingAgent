@@ -83,15 +83,19 @@ You are responsible for:
 - ensuring the user's request is fully satisfied.
 `;
 
-let previousInteractionId: string | undefined;
+const chat: any[] = [];
 
 export async function orchestratorAgent(input: string) {
-  await agentLoop({
+  chat.push({
+    type: "user_input",
+    content: [{ type: "text", text: input }],
+  });
+
+  return await agentLoop({
     identity: { name: "orchestrator" },
     systemInstruction,
-    input,
+    chat,
     tools,
     availableFunctions: availableFunctionsMapping,
-    previousInteractionId,
   });
 }

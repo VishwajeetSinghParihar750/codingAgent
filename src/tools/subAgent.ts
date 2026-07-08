@@ -92,10 +92,17 @@ const subAgentRun = async (args: { tools: string[]; input: string }) => {
     (name) => (subAgentToolsDefinitionsMapping as any)[name],
   );
 
+  const chat = [
+    {
+      type: "user_input",
+      content: [{ type: "text", text: args.input }],
+    },
+  ];
+
   const toReturn = await agentLoop({
     identity,
     systemInstruction,
-    input: args.input,
+    chat,
     tools,
     availableFunctions,
     outputStructure: {
