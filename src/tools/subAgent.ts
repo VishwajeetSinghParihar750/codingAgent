@@ -13,58 +13,85 @@ const subAgentResponseSchema = {
     schema: {
       type: "object",
       properties: {
-        parent: {
+        handoff: {
           type: "object",
           description:
-            "Information returned to the parent agent so it can continue execution.",
+            "Execution handoff returned to the parent agent. The parent will use this information as its working context and may pass parts of it to future subagents. Assume the parent will never see this execution, scratchpad, tool calls, or intermediate reasoning again. Preserve all important context required to continue the work without repeating completed investigation. Optimize for minimizing information loss, not for brevity. The handoff may be a few paragraphs for small tasks or tens of thousands of tokens for very large executions.",
 
           properties: {
-            summary: {
+            executionContext: {
               type: "string",
               description:
-                "Brief summary (100-300 tokens) of what was accomplished.",
+                "A comprehensive narrative of the execution. Include the objective, important reasoning, approaches explored, major decisions, tradeoffs, significant intermediate conclusions, important failed approaches (only if they affect future work), tool results that matter, relationships between findings, and anything another agent would need to continue from this exact point. There is no preferred length—include as much detail as necessary to avoid losing important context.",
             },
 
             deliverable: {
               type: "string",
               description:
-                "The primary output requested by the parent. Can contain markdown, code, JSON serialized as string, or any textual artifact.",
+                "The primary artifact produced during execution. This is the direct output requested by the parent. It may contain markdown, source code, JSON serialized as a string, documentation, configuration, reports, or any other textual artifact. Do not duplicate executionContext unless required for correctness.",
             },
 
             keyFindings: {
               type: "array",
-              items: { type: "string" },
-              description: "Important discoveries the parent should know.",
+              description:
+                "Atomic discoveries or conclusions that the parent should know. Each finding should be independently understandable and easy to reference. Avoid repeating information already sufficiently covered in executionContext.",
+
+              items: {
+                type: "string",
+              },
             },
 
             assumptions: {
               type: "array",
-              items: { type: "string" },
+              description:
+                "Assumptions made during execution that may influence correctness or future work. Include uncertainties, missing information, inferred behavior, or external dependencies.",
+
+              items: {
+                type: "string",
+              },
             },
 
             recommendations: {
               type: "array",
-              items: { type: "string" },
-              description: "Suggested next tasks or follow-up investigations.",
+              description:
+                "Suggested next actions for the parent agent. These may include additional investigations, validation steps, implementation tasks, optimization opportunities, unresolved questions, or potential subagent tasks.",
+
+              items: {
+                type: "string",
+              },
+            },
+
+            unresolvedItems: {
+              type: "array",
+              description:
+                "Problems, unknowns, ambiguities, blockers, or questions that remain unresolved at the end of execution. Leave empty if the task is fully complete.",
+
+              items: {
+                type: "string",
+              },
+            },
+
+            artifactsProduced: {
+              type: "array",
+              description:
+                "Artifacts created during execution that may be useful later. Include file paths, document names, generated outputs, identifiers, or references that the parent can use.",
+
+              items: {
+                type: "string",
+              },
             },
 
             confidence: {
               type: "number",
               minimum: 0,
               maximum: 1,
+              description:
+                "Overall confidence that the execution is correct and complete. Lower confidence if conclusions rely on assumptions, incomplete information, or uncertain tool results.",
             },
           },
 
-          required: [
-            "summary",
-            "deliverable",
-            "keyFindings",
-            "assumptions",
-            "recommendations",
-            "confidence",
-          ],
+          required: ["executionContext", "deliverable", "confidence"],
         },
-
         tree: {
           type: "object",
           description: "Minimal metadata used to update the execution tree.",
@@ -114,74 +141,85 @@ const subAgentResponseSchema = {
         memory: {
           type: "object",
           description:
-            "Information to store in execution memory for future retrieval.",
+            "Candidate long-term memories extracted from this execution. Only include information that would help a future agent perform better. Do NOT include temporary reasoning, scratchpad thoughts, failed attempts (unless they teach a reusable lesson), or information already present in the parent response.",
 
           properties: {
-            shouldStore: {
-              type: "boolean",
-            },
-
-            importance: {
-              type: "number",
-              minimum: 0,
-              maximum: 1,
-            },
-
-            searchableSummary: {
-              type: "string",
-              description: "Compact retrieval-oriented summary.",
-            },
-
-            findings: {
+            candidates: {
               type: "array",
-              items: {
-                type: "string",
-              },
-            },
+              description:
+                "A list of durable memories worth considering for storage. If nothing from this execution is likely to be useful in the future, return an empty array.",
 
-            keywords: {
-              type: "array",
               items: {
-                type: "string",
-              },
-            },
+                type: "object",
 
-            concepts: {
-              type: "array",
-              items: {
-                type: "string",
-              },
-            },
+                properties: {
+                  type: {
+                    type: "string",
+                    enum: [
+                      "semantic",
+                      "episodic",
+                      "procedural",
+                      "reflection",
+                      "planning",
+                    ],
+                    description:
+                      "The kind of memory:\n" +
+                      "- semantic: Stable facts that are expected to remain true (e.g. project uses Bun, API endpoint exists).\n" +
+                      "- episodic: Significant events or completed work that happened during this execution.\n" +
+                      "- procedural: Reusable instructions, workflows, or techniques that another agent could follow.\n" +
+                      "- reflection: General lessons, heuristics, or insights learned from the execution.\n" +
+                      "- planning: Long-term goals, unfinished work, or future tasks that should be remembered.",
+                  },
 
-            assumptions: {
-              type: "array",
-              items: {
-                type: "string",
-              },
-            },
+                  title: {
+                    type: "string",
+                    description:
+                      "A concise 3-10 word title describing the memory. This should make it easy to understand the memory at a glance.",
+                  },
 
-            decisions: {
-              type: "array",
-              items: {
-                type: "string",
+                  content: {
+                    type: "string",
+                    description:
+                      "The complete memory in natural language. It should be self-contained so another agent can understand it without seeing this execution.",
+                  },
+
+                  confidence: {
+                    type: "number",
+                    minimum: 0,
+                    maximum: 1,
+                    description:
+                      "How confident you are that this memory is accurate. Use lower confidence if it is inferred, uncertain, or based on assumptions.",
+                  },
+
+                  importance: {
+                    type: "number",
+                    minimum: 0,
+                    maximum: 1,
+                    description:
+                      "How valuable this memory is for future executions. High importance should be reserved for durable knowledge that is likely to help across multiple future tasks.",
+                  },
+
+                  evidence: {
+                    type: "string",
+                    description:
+                      "Optional explanation of where this memory came from (e.g. repository inspection, tool output, user instruction, successful implementation). Leave empty if unnecessary.",
+                  },
+                },
+
+                required: [
+                  "type",
+                  "title",
+                  "content",
+                  "confidence",
+                  "importance",
+                ],
               },
             },
           },
-
-          required: [
-            "shouldStore",
-            "importance",
-            "searchableSummary",
-            "findings",
-            "keywords",
-            "concepts",
-            "assumptions",
-            "decisions",
-          ],
         },
       },
 
-      required: ["parent", "tree", "memory"],
+      required: ["parent", "tree"],
     },
   },
 };
@@ -237,7 +275,7 @@ const subAgentDefinition: any = {
   Spawn a focused sub-agent to complete a delegated task using the tools you assign.
   Use this for non-trivial work that needs investigation, multiple tool calls, or substantial reasoning.
   Do not use for small tasks you can finish yourself in a few steps.
-  Response format : ${subAgentResponseSchema.response_format.schema.properties.parent}
+  Response format : ${subAgentResponseSchema.response_format.schema.properties.handoff}
   `,
   parameters: {
     type: "object",
