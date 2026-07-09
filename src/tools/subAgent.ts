@@ -92,52 +92,6 @@ const subAgentResponseSchema = {
 
           required: ["executionContext", "deliverable", "confidence"],
         },
-        tree: {
-          type: "object",
-          description: "Minimal metadata used to update the execution tree.",
-
-          properties: {
-            title: {
-              type: "string",
-            },
-
-            status: {
-              type: "string",
-              enum: ["completed", "partial", "failed"],
-            },
-
-            tags: {
-              type: "array",
-              items: {
-                type: "string",
-              },
-            },
-
-            artifacts: {
-              type: "array",
-              items: {
-                type: "string",
-              },
-              description: "IDs of produced artifacts.",
-            },
-
-            childTasksSuggested: {
-              type: "array",
-              items: {
-                type: "string",
-              },
-            },
-          },
-
-          required: [
-            "title",
-            "status",
-            "tags",
-            "artifacts",
-            "childTasksSuggested",
-          ],
-        },
-
         memory: {
           type: "object",
           description:
